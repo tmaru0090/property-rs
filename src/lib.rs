@@ -53,7 +53,7 @@ pub fn property_derive(input: TokenStream) -> TokenStream {
     TokenStream::from(expanded)
 }*/
 
-
+/*
 #[proc_macro_derive(Property, attributes(get, set))]
 pub fn property_derive(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
@@ -116,4 +116,66 @@ pub fn property_derive(input: TokenStream) -> TokenStream {
 
 
 
+*/
 
+
+
+#[proc_macro_derive(Property, attributes(get, set))]
+pub fn property_derive(input: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(input as DeriveInput);
+    let name = input.ident;
+
+    let expanded = match input.data {
+        syn::Data::Struct(data) => {
+            let getters_and_setters = data.fields.iter().map(|field| {
+                let field_name = &field.ident;
+                let field_type = &field.ty;
+                let mut getter = None;
+                let mut setter = None;
+
+                for attr in &field.attrs {
+                    attr.parse_nested_meta(|meta| {
+                        if meta.path.is_ident("get") {
+                            let is_reference = matches!(field_type, syn::Type::Reference(_));
+                            getter = Some(if is_reference {
+                                quote! {
+                                    pub fn #field_name(&self) -> &#field_type {
+                                        &self.#field_name
+                                    }
+                                }
+                            } else {
+                                quote! {
+                                    pub fn #field_name(&self) -> #field_type {
+                                        self.#field_name.clone()
+                                    }
+                                }
+                            });
+                        } else if meta.path.is_ident("set") {
+                            let setter_name = syn::Ident::new(&format!("set_{}", field_name.as_ref().unwrap()), field_name.span());
+                            setter = Some(quote! {
+                                pub fn #setter_name(&mut self, value: #field_type) {
+                                    self.#field_name = value;
+                                }
+                            });
+                        }
+                        Ok(())
+                    }).unwrap();
+                }
+
+                quote! {
+                    #getter
+                    #setter
+                }
+            });
+
+            quote! {
+                impl #name {
+                    #(#getters_and_setters)*
+                }
+            }
+        }
+        _ => quote! {},
+    };
+
+    TokenStream::from(expanded)
+}
