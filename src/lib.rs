@@ -116,6 +116,7 @@ pub fn property_derive(input: TokenStream) -> TokenStream {
 */
 
 
+
 #[proc_macro_derive(Property, attributes(property))]
 pub fn property_derive(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
@@ -123,8 +124,8 @@ pub fn property_derive(input: TokenStream) -> TokenStream {
 
     let expanded = match input.data {
         syn::Data::Struct(data) => {
-            let getters_and_setters = data.fields.iter().map(|field| {
-                let field_name = field.ident.as_ref().unwrap();
+            let getters_and_setters = data.fields.iter().filter_map(|field| {
+                let field_name = field.ident.as_ref()?;
                 let field_type = &field.ty;
                 let mut getter = None;
                 let mut setter = None;
@@ -164,10 +165,10 @@ pub fn property_derive(input: TokenStream) -> TokenStream {
                     }
                 }
 
-                quote! {
+                Some(quote! {
                     #getter
                     #setter
-                }
+                })
             });
 
             quote! {
