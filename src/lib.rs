@@ -117,6 +117,7 @@ pub fn property_derive(input: TokenStream) -> TokenStream {
 
 
 
+
 #[proc_macro_derive(Property, attributes(property))]
 pub fn property_derive(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
@@ -132,7 +133,7 @@ pub fn property_derive(input: TokenStream) -> TokenStream {
 
                 for attr in &field.attrs {
                     if attr.path().is_ident("property") {
-                        attr.parse_nested_meta(|meta| {
+                        if let Ok(_) = attr.parse_nested_meta(|meta| {
                             if let Ok(meta) = meta.value()?.parse::<Meta>() {
                                 if let Meta::Path(path) = meta {
                                     if path.is_ident("get") {
@@ -161,7 +162,12 @@ pub fn property_derive(input: TokenStream) -> TokenStream {
                                 }
                             }
                             Ok(())
-                        }).unwrap();
+                        }) {
+                            // 属性の解析に成功した場合の処理
+                        } else {
+                            // 属性の解析に失敗した場合の処理
+                            return None;
+                        }
                     }
                 }
 
