@@ -117,8 +117,6 @@ pub fn property_derive(input: TokenStream) -> TokenStream {
 
 
 
-
-
 #[proc_macro_derive(Property, attributes(property))]
 pub fn property_derive(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
