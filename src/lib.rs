@@ -124,7 +124,7 @@ pub fn property_derive(input: TokenStream) -> TokenStream {
     let expanded = match input.data {
         syn::Data::Struct(data) => {
             let getters_and_setters = data.fields.iter().map(|field| {
-                let field_name = &field.ident;
+                let field_name = field.ident.as_ref().expect("Expected named fields");
                 let field_type = &field.ty;
                 let mut getter = None;
                 let mut setter = None;
@@ -150,7 +150,7 @@ pub fn property_derive(input: TokenStream) -> TokenStream {
                                             }
                                         });
                                     } else if path.is_ident("set") {
-                                        let setter_name = syn::Ident::new(&format!("set_{}", field_name.as_ref().unwrap()), field_name.span());
+                                        let setter_name = syn::Ident::new(&format!("set_{}", field_name), field_name.span());
                                         setter = Some(quote! {
                                             pub fn #setter_name(&mut self, value: #field_type) {
                                                 self.#field_name = value;
