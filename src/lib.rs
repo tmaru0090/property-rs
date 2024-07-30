@@ -1,7 +1,7 @@
 
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{Type,parse_macro_input, DeriveInput, Data, Fields};
+use syn::{Type,parse_macro_input, DeriveInput, Data, Fields,Meta};
 use syn::spanned::Spanned;
 
 /*
@@ -113,14 +113,10 @@ pub fn property_derive(input: TokenStream) -> TokenStream {
 
     TokenStream::from(expanded)
 }
-
-
 */
 
 
-
-
-#[proc_macro_derive(Property, attributes(get, set))]
+#[proc_macro_derive(Property, attributes(property))]
 pub fn property_derive(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
     let name = input.ident;
@@ -134,28 +130,37 @@ pub fn property_derive(input: TokenStream) -> TokenStream {
                 let mut setter = None;
 
                 for attr in &field.attrs {
-                    if attr.path().is_ident("get") {
-                        let is_reference = matches!(field_type, syn::Type::Reference(_));
-                        getter = Some(if is_reference {
-                            quote! {
-                                pub fn #field_name(&self) -> &#field_type {
-                                    &self.#field_name
+                    if attr.path().is_ident("property") {
+                        attr.parse_nested_meta(|meta| {
+                            if let Ok(meta) = meta.value()?.parse::<Meta>() {
+                                if let Meta::Path(path) = meta {
+                                    if path.is_ident("get") {
+                                        let is_reference = matches!(field_type, syn::Type::Reference(_));
+                                        getter = Some(if is_reference {
+                                            quote! {
+                                                pub fn #field_name(&self) -> &#field_type {
+                                                    &self.#field_name
+                                                }
+                                            }
+                                        } else {
+                                            quote! {
+                                                pub fn #field_name(&self) -> #field_type {
+                                                    self.#field_name.clone()
+                                                }
+                                            }
+                                        });
+                                    } else if path.is_ident("set") {
+                                        let setter_name = syn::Ident::new(&format!("set_{}", field_name.as_ref().unwrap()), field_name.span());
+                                        setter = Some(quote! {
+                                            pub fn #setter_name(&mut self, value: #field_type) {
+                                                self.#field_name = value;
+                                            }
+                                        });
+                                    }
                                 }
                             }
-                        } else {
-                            quote! {
-                                pub fn #field_name(&self) -> #field_type {
-                                    self.#field_name.clone()
-                                }
-                            }
-                        });
-                    } else if attr.path().is_ident("set") {
-                        let setter_name = syn::Ident::new(&format!("set_{}", field_name.as_ref().unwrap()), field_name.span());
-                        setter = Some(quote! {
-                            pub fn #setter_name(&mut self, value: #field_type) {
-                                self.#field_name = value;
-                            }
-                        });
+                            Ok(())
+                        }).unwrap();
                     }
                 }
 
