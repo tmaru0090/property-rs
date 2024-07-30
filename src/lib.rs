@@ -131,28 +131,33 @@ pub fn property_derive(input: TokenStream) -> TokenStream {
                 let mut setter = None;
 
                 for attr in &field.attrs {
-                    if attr.path().is_ident("get") {
-                        let is_reference = matches!(field_type, syn::Type::Reference(_));
-                        getter = Some(if is_reference {
-                            quote! {
-                                pub fn #field_name(&self) -> &#field_type {
-                                    &self.#field_name
-                                }
+                    if attr.path().is_ident("get") || attr.path().is_ident("set") {
+                        attr.parse_nested_meta(|meta| {
+                            if meta.path.is_ident("get") {
+                                let is_reference = matches!(field_type, syn::Type::Reference(_));
+                                getter = Some(if is_reference {
+                                    quote! {
+                                        pub fn #field_name(&self) -> &#field_type {
+                                            &self.#field_name
+                                        }
+                                    }
+                                } else {
+                                    quote! {
+                                        pub fn #field_name(&self) -> #field_type {
+                                            self.#field_name.clone()
+                                        }
+                                    }
+                                });
+                            } else if meta.path.is_ident("set") {
+                                let setter_name = syn::Ident::new(&format!("set_{}", field_name.as_ref().unwrap()), field_name.span());
+                                setter = Some(quote! {
+                                    pub fn #setter_name(&mut self, value: #field_type) {
+                                        self.#field_name = value;
+                                    }
+                                });
                             }
-                        } else {
-                            quote! {
-                                pub fn #field_name(&self) -> #field_type {
-                                    self.#field_name.clone()
-                                }
-                            }
-                        });
-                    } else if attr.path().is_ident("set") {
-                        let setter_name = syn::Ident::new(&format!("set_{}", field_name.as_ref().unwrap()), field_name.span());
-                        setter = Some(quote! {
-                            pub fn #setter_name(&mut self, value: #field_type) {
-                                self.#field_name = value;
-                            }
-                        });
+                            Ok(())
+                        }).unwrap();
                     }
                 }
 
