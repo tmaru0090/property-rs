@@ -124,7 +124,7 @@ pub fn property_derive(input: TokenStream) -> TokenStream {
     let expanded = match input.data {
         syn::Data::Struct(data) => {
             let getters_and_setters = data.fields.iter().map(|field| {
-                let field_name = field.ident.as_ref().expect("Expected named fields");
+                let field_name = field.ident.as_ref().unwrap();
                 let field_type = &field.ty;
                 let mut getter = None;
                 let mut setter = None;
