@@ -1,7 +1,7 @@
 
 use proc_macro::TokenStream;
 use quote::{quote,format_ident};
-use syn::{Type,parse_macro_input, DeriveInput, Data, Fields,Meta,Ident,Token};
+use syn::{Type,parse_macro_input, DeriveInput, Data, Fields,Meta,Ident,Token, ItemImpl, ImplItem};
 use syn::spanned::Spanned;
 use syn::parse::ParseStream;
 /*
@@ -114,6 +114,7 @@ pub fn property_derive(input: TokenStream) -> TokenStream {
     TokenStream::from(expanded)
 }
 */
+
 #[proc_macro_derive(GetMethodsAndFields)]
 pub fn get_methods_and_fields(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
@@ -128,21 +129,30 @@ pub fn get_methods_and_fields(input: TokenStream) -> TokenStream {
         quote! { (stringify!(#name), "field") }
     });
 
-    let expanded = quote! {
+    let methods = quote! {
         impl #name {
             pub fn get_methods_and_fields() -> Vec<(&'static str, &'static str)> {
-                vec![
+                let mut items = vec![
                     #(#fields),*
-                ]
+                ];
+
+                // Add method names
+                let methods = vec![
+                    // Add your method names here
+                ];
+
+                items.extend(methods);
+                items
             }
         }
     };
 
+    let expanded = quote! {
+        #methods
+    };
+
     TokenStream::from(expanded)
 }
-
-
-
 
 
 
