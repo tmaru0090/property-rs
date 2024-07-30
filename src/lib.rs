@@ -115,55 +115,6 @@ pub fn property_derive(input: TokenStream) -> TokenStream {
 }
 */
 
-#[proc_macro_derive(GetMethodsAndFields)]
-pub fn get_methods_and_fields(input: TokenStream) -> TokenStream {
-    let input = parse_macro_input!(input as DeriveInput);
-    let name = &input.ident;
-    let data = match input.data {
-        syn::Data::Struct(ref data) => data,
-        _ => panic!("Only structs are supported"),
-    };
-
-    let fields = data.fields.iter().map(|f| {
-        let name = &f.ident;
-        quote! { (stringify!(#name), "field") }
-    });
-
-    let methods = quote! {
-        impl #name {
-            pub fn get_methods_and_fields() -> Vec<(&'static str, &'static str)> {
-                let mut items = vec![
-                    #(#fields),*
-                ];
-
-                // Add method names
-                let methods = vec![
-                    // Add your method names here
-                ];
-
-                items.extend(methods);
-                items
-            }
-        }
-    };
-
-    let expanded = quote! {
-        #methods
-    };
-
-    TokenStream::from(expanded)
-}
-
-
-
-
-
-
-
-
-
-
-
 
 
 
