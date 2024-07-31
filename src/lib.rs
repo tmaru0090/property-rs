@@ -65,11 +65,19 @@ pub fn derive_property(input: TokenStream) -> TokenStream {
                 };
 
                 let setter = if generate_setter {
-                    let condition_check = conditions.iter().map(|cond| quote! { #cond }).collect::<Vec<_>>();
-                    quote! {
-                        pub fn #setter_name(&mut self, value: #field_type) {
-                            if #(#condition_check)&&* {
+                    if conditions.is_empty() {
+                        quote! {
+                            pub fn #setter_name(&mut self, value: #field_type) {
                                 self.#field_name = value;
+                            }
+                        }
+                    } else {
+                        let condition_check = conditions.iter().map(|cond| quote! { #cond }).collect::<Vec<_>>();
+                        quote! {
+                            pub fn #setter_name(&mut self, value: #field_type) {
+                                if #(#condition_check)&&* {
+                                    self.#field_name = value;
+                                }
                             }
                         }
                     }
@@ -97,3 +105,7 @@ pub fn derive_property(input: TokenStream) -> TokenStream {
 
     TokenStream::from(expanded)
 }
+
+
+
+
